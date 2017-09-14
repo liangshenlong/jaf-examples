@@ -1,5 +1,7 @@
 package com.jaf.examples.httpserver;
 
+import com.jaf.examples.httpserver.simple.SimpleResponse;
+
 import java.io.IOException;
 
 /**
@@ -12,7 +14,9 @@ import java.io.IOException;
 public abstract class HttpServer {
 	
 	public abstract void start() throws IOException;
-	
-	protected abstract Response doService(Request request);
+
+	protected Response handlerRequest(Request request) {
+		return new SimpleResponse(request.getUri(), request.getRequestParams());
+	}
 	
 }

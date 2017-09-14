@@ -1,8 +1,7 @@
 package com.jaf.examples.httpserver.simple;
 
-import static com.jaf.examples.httpserver.common.Constants.REQUEST_HEAD_FIRST_LINE_PATTERN;
-import static com.jaf.examples.httpserver.common.Constants.SERVER_PORT;
-import static com.jaf.examples.httpserver.common.Constants.SPLIT;
+import com.jaf.examples.httpserver.Response;
+import com.jaf.examples.httpserver.server.SimpleHttpServer;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -13,8 +12,7 @@ import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import com.jaf.examples.httpserver.Request;
-import com.jaf.examples.httpserver.Response;
+import static com.jaf.examples.httpserver.common.Constants.*;
 
 /**
  * 基于线程池的实现
@@ -28,14 +26,12 @@ public class ThreadPoolHttpServer extends SimpleHttpServer {
 	@Override
 	public void start() throws IOException {
 		ExecutorService executorService = Executors.newFixedThreadPool(10);
-		
+
 		ServerSocket serverSocket = null;
 		try {
 			serverSocket = new ServerSocket(SERVER_PORT);
 			while(true) {
 				Socket socket = serverSocket.accept();
-				System.out.println("******* open  " + socket.toString() + " connected. *******");
-				
 				try (LineNumberReader reader = new LineNumberReader(new InputStreamReader(socket.getInputStream()))) {
 					String lineInput;
 					StringBuilder requestStr = null;
@@ -45,7 +41,7 @@ public class ThreadPoolHttpServer extends SimpleHttpServer {
 							requestStr = new StringBuilder();
 						}
 						requestStr.append(lineInput).append(SPLIT);
-						
+
 						if(lineInput.isEmpty()) {
 							ServiceTask task = new ServiceTask(requestStr.toString(), socket.getOutputStream());
 							executorService.execute(task);
@@ -63,12 +59,12 @@ public class ThreadPoolHttpServer extends SimpleHttpServer {
 			}
 		}
 	}
-	
+
 	private class ServiceTask implements Runnable {
-		
+
 		private final String requestStr;
 		private final OutputStream writer;
-		
+
 		ServiceTask(String requestStr, OutputStream writer) {
 			this.requestStr = requestStr;
 			this.writer = writer;
@@ -77,14 +73,13 @@ public class ThreadPoolHttpServer extends SimpleHttpServer {
 		@Override
 		public void run() {
 			try {
-				Request request = new SimpleRequest(requestStr);
-				Response response = doService(request);
-				doWrite(writer, response.getResponseBytes());
+				Response response = handlerRequest(new SimpleRequest(requestStr));
+				doWrite(writer, response.toBytes());
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
-		
+
 	}
 	
 }

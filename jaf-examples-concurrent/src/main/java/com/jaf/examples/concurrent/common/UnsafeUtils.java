@@ -1,7 +1,5 @@
 package com.jaf.examples.concurrent.common;
 
-import java.lang.reflect.Field;
-
 import sun.misc.Unsafe;
 
 /**
@@ -13,20 +11,44 @@ import sun.misc.Unsafe;
  */
 public final class UnsafeUtils {
 	
-	private static final Unsafe unsafe;
+	private static final Unsafe U;
 	
 	static {
-		try {
-			Field singleoneInstanceField = Unsafe.class.getDeclaredField("theUnsafe");
-			singleoneInstanceField.setAccessible(true);
-			unsafe = (Unsafe) singleoneInstanceField.get(null);
-		} catch (Exception e) {
-			throw new Error(e);
-		}
+		U = getU();
 	}
 	
+
 	public static Unsafe getUnsafe() {
-		return unsafe;
-	}
+	    return U;
+    }
+
+	/**
+	 * netty 里面的做法
+	 * 
+	 * @see io.netty.util.internal.chmv8.ForkJoinPool
+	 * @return
+	 */
+	private static sun.misc.Unsafe getU() {
+        try {
+            return sun.misc.Unsafe.getUnsafe();
+        } catch (SecurityException tryReflectionInstead) {}
+        try {
+            return java.security.AccessController.doPrivileged
+                    (new java.security.PrivilegedExceptionAction<sun.misc.Unsafe>() {
+                        public sun.misc.Unsafe run() throws Exception {
+                            Class<sun.misc.Unsafe> k = sun.misc.Unsafe.class;
+                            for (java.lang.reflect.Field f : k.getDeclaredFields()) {
+                                f.setAccessible(true);
+                                Object x = f.get(null);
+                                if (k.isInstance(x))
+                                    return k.cast(x);
+                            }
+                            throw new NoSuchFieldError("the Unsafe");
+                        }});
+        } catch (java.security.PrivilegedActionException e) {
+            throw new RuntimeException("Could not initialize intrinsics",
+                    e.getCause());
+        }
+    }
 	
 }

@@ -11,8 +11,8 @@ import java.nio.charset.Charset;
 import java.util.Iterator;
 import java.util.Set;
 
-import com.jaf.examples.httpserver.Response;
 import com.jaf.examples.httpserver.common.Constants;
+import com.jaf.examples.httpserver.server.SimpleHttpServer;
 
 /**
  * 基于NIO的实现
@@ -57,9 +57,7 @@ public class NioHttpServer extends SimpleHttpServer {
 			SocketChannel sc = ssc.accept();
 			sc.configureBlocking(false);
 			sc.register(selector, SelectionKey.OP_READ);
-		}
-		
-		if(key.isReadable()) {
+		} else if(key.isReadable()) {
 			SocketChannel sc = (SocketChannel) key.channel();
 			ByteBuffer readBuffer = ByteBuffer.allocate(1024);
 			int readBytes = sc.read(readBuffer);
@@ -69,9 +67,10 @@ public class NioHttpServer extends SimpleHttpServer {
 				readBuffer.get(bytes);
 				String requestStr = new String(bytes, Charset.forName("UTF-8"));
 				System.out.println(requestStr);
-				
-				Response response = this.doService(new SimpleRequest(requestStr));
-				this.doWrite(sc, response.getResponseBytes());
+
+
+//				SimpleResponse response = this.doService(new SimpleRequest(requestStr));
+//				this.doWrite(sc, response.getResponseBytes());
 			} else if(readBytes < 0) {
 				key.cancel();
 				sc.close();
